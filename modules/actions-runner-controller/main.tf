@@ -1,27 +1,4 @@
-provider "kubernetes" {
-  host                   = module.eks.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.cluster_ca_certificate)
-  exec {
-    api_version = "client.authentication.k8s.io/v1beta1"
-    command     = "aws"
-    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_id]
-  }
-}
-
-provider "helm" {
-  kubernetes {
-    host                   = module.eks.cluster_endpoint
-    cluster_ca_certificate = base64decode(module.eks.cluster_ca_certificate)
-    exec {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      command     = "aws"
-      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_id]
-    }
-  }
-}
-
-
-
+# This module deploys the Actions Runner Controller on an EKS cluster.
 resource "helm_release" "actions_runner_controller" {
   name       = "actions-runner-controller"
   repository = "https://actions-runner-controller.github.io/actions-runner-controller"
@@ -37,6 +14,7 @@ resource "helm_release" "actions_runner_controller" {
     name  = "githubWebhookServer.enabled"
     value = "false"
   }
+  depends_on = [ var.cluster_endpoint, var.cluster_ca_certificate, var.cluster_name, module.karpenter.karpenter_release_name ]
 }
 
 resource "kubernetes_secret" "controller_manager" {
@@ -49,7 +27,7 @@ resource "kubernetes_secret" "controller_manager" {
     github_token = var.github_token
   }
 
-  depends_on = [helm_release.actions_runner_controller]
+  depends_on = [kubernetes_secret.controller_manager, var.cluster_endpoint, var.cluster_ca_certificate, var.cluster_name]
 }
 
 resource "kubernetes_manifest" "runner_deployment" {
@@ -81,5 +59,5 @@ resource "kubernetes_manifest" "runner_deployment" {
     }
   }
 
-  depends_on = [kubernetes_secret.controller_manager]
+  depends_on = [kubernetes_secret.controller_manager, var.cluster_endpoint, var.cluster_ca_certificate, var.cluster_name]
 }
