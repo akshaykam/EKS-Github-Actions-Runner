@@ -1,4 +1,3 @@
-# This module deploys the Actions Runner Controller on an EKS cluster.
 resource "helm_release" "actions_runner_controller" {
   name       = "actions-runner-controller"
   repository = "https://actions-runner-controller.github.io/actions-runner-controller"
@@ -14,7 +13,8 @@ resource "helm_release" "actions_runner_controller" {
     name  = "githubWebhookServer.enabled"
     value = "false"
   }
-  depends_on = [ var.cluster_endpoint, var.cluster_ca_certificate, var.cluster_name, module.karpenter.karpenter_release_name ]
+
+  depends_on = [module.karpenter]
 }
 
 resource "kubernetes_secret" "controller_manager" {
@@ -27,7 +27,7 @@ resource "kubernetes_secret" "controller_manager" {
     github_token = var.github_token
   }
 
-  depends_on = [kubernetes_secret.controller_manager, var.cluster_endpoint, var.cluster_ca_certificate, var.cluster_name]
+  depends_on = [helm_release.actions_runner_controller]
 }
 
 resource "kubernetes_manifest" "runner_deployment" {
@@ -59,5 +59,5 @@ resource "kubernetes_manifest" "runner_deployment" {
     }
   }
 
-  depends_on = [kubernetes_secret.controller_manager, var.cluster_endpoint, var.cluster_ca_certificate, var.cluster_name]
+  depends_on = [kubernetes_secret.controller_manager]
 }
