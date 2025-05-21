@@ -16,7 +16,7 @@ variable "subnet_ids" {
 
 variable "security_group_ids" {
   description = "List of security group IDs for the EKS cluster"
-  type        = list(string)
+  type        = string
 }
 
 variable "github_repository" {

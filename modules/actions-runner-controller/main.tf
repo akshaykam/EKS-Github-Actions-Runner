@@ -27,7 +27,7 @@ resource "kubernetes_secret" "controller_manager" {
     github_token = var.github_token
   }
 
-  depends_on = [helm_release.actions_runner_controller]
+  depends_on = [helm_release.actions_runner_controller,module.karpenter]
 }
 
 resource "kubernetes_manifest" "runner_deployment" {
@@ -59,5 +59,5 @@ resource "kubernetes_manifest" "runner_deployment" {
     }
   }
 
-  depends_on = [kubernetes_secret.controller_manager]
+  depends_on = [kubernetes_secret.controller_manager, module.karpenter]
 }
